@@ -11,9 +11,8 @@ export function Hero() {
             <span /> EL SIGUIENTE NIVEL ES TUYO
           </span>
           <h1>
-            POTENCIA
-            <br />
-            TU <em>MUNDO.</em>
+            <span className="hero-title-line">POTENCIA</span>
+            <span className="hero-title-line">TU <em>MUNDO.</em></span>
           </h1>
           <p>
             Componentes de alto rendimiento para llevar tu experiencia al
@@ -31,17 +30,6 @@ export function Hero() {
           name="logo1.jpg"
           alt="Setup gaming de HardTech Hub"
           className="hero-main-art"
-          fallback={
-            <div className="tech-art" aria-hidden="true">
-              <div className="tech-orbit orbit-one" />
-              <div className="tech-orbit orbit-two" />
-              <div className="tech-chip">
-                <Cpu size={100} strokeWidth={0.7} />
-                <span>HARDTECH</span>
-              </div>
-              <span className="tech-coordinate">PERFORMANCE / 01</span>
-            </div>
-          }
         />
       </div>
       <div className="hero-side">
@@ -57,9 +45,8 @@ export function Hero() {
             <ArrowUpRight size={16} />
           </span>
           <AssetImage
-            name="banners/hero-gpu.webp"
+            name="logo2.jpg"
             alt="Tarjeta gráfica"
-            fallback={<Microchip size={115} strokeWidth={0.7} />}
           />
         </Link>
         <Link
@@ -77,9 +64,8 @@ export function Hero() {
             <ArrowUpRight size={16} />
           </span>
           <AssetImage
-            name="banners/hero-laptop.webp"
+            name="lap1.png"
             alt="Laptop de alto rendimiento"
-            fallback={<Laptop size={125} strokeWidth={0.7} />}
           />
         </Link>
       </div>

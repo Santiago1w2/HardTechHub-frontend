@@ -12,7 +12,7 @@ export function AssetImage({
 }: {
   name: string
   alt: string
-  fallback: ReactNode
+  fallback?: ReactNode
   className?: string
 }) {
   const [failed, setFailed] = useState(false)
@@ -20,7 +20,7 @@ export function AssetImage({
   return (
     <div className={`asset-image ${className}`}>
       {src && !failed ? (
-        <img src={src} alt={alt} onError={() => setFailed(true)} />
+        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setFailed(true)} />
       ) : (
         fallback
       )}

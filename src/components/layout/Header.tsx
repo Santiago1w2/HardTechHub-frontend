@@ -11,6 +11,8 @@ import {
   LogOut,
   Cpu,
 } from 'lucide-react'
+import icon2 from '../../assets/icon2.png'
+
 import { useAuth, useCart, useProducts } from '../../hooks'
 import { categories, categoryHref } from '../../data/categories'
 import { matchesSearch } from '../../utils/catalog'
@@ -18,17 +20,17 @@ import { formatPrice } from '../../utils/formatPrice'
 import { ProductImage } from '../product/ProductImage'
 export function Wordmark() {
   return (
-    <Link className="wordmark" to="/" aria-label="HardTech Hub, inicio">
-      <span className="wordmark-icon">
-        <Cpu size={24} />
-      </span>
-      <span>
-        HARDTECH
-        <span className="wordmark-hub">
-          HUB<span className="logo-dot">.</span>
-        </span>
-      </span>
-    </Link>
+<Link
+  className="wordmark"
+  to="/"
+  aria-label="HardTech Hub, inicio"
+>
+  <img
+    src={icon2}
+    alt="HardTech Hub"
+    className="h-16 w-auto object-contain"
+  />
+</Link>
   )
 }
 function SearchBox() {
