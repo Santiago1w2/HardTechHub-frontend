@@ -45,7 +45,7 @@ export function Hero() {
             <ArrowUpRight size={16} />
           </span>
           <AssetImage
-            name="logo2.jpg"
+            name="gpu.png"
             alt="Tarjeta gráfica"
           />
         </Link>
