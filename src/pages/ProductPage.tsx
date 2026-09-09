@@ -18,6 +18,7 @@ function ProductDetail({ id }: { id: number }) {
   const { product, loading, error, refetch } = useProduct(id)
   const [quantity, setQuantity] = useState(1)
   const { add, feedback, failed } = useProductPurchase()
+  console.log(product);
   return (
     <div className="container page">
       <Breadcrumb

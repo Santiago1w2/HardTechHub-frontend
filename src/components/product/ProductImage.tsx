@@ -1,17 +1,9 @@
 import { useState } from 'react'
 import { Cpu } from 'lucide-react'
 import { categoryInfo } from '../../data/categories'
-function ImageContent({
-  src,
-  name,
-  category,
-}: {
-  src: string | null
-  name: string
-  category?: string
-}) {
-  const [failed, setFailed] = useState(false)
-  const Icon = categoryInfo(category || '')?.icon || Cpu
+function ImageContent({src, name, category,}: {src: string | null, name: string,category?: string}) {
+  const [failed, setFailed] = useState(false);
+  const Icon = categoryInfo(category || '')?.icon || Cpu;
   return src && !failed ? (
     <img src={src} alt={name} loading="lazy" onError={() => setFailed(true)} />
   ) : (
@@ -21,17 +13,7 @@ function ImageContent({
     </div>
   )
 }
-export function ProductImage({
-  src,
-  name,
-  category,
-  className = '',
-}: {
-  src: string | null
-  name: string
-  category?: string
-  className?: string
-}) {
+export function ProductImage({src, name, category, className = '',}: {src: string | null,name: string,category?: string,className?: string}) {
   return (
     <div className={`product-image ${className}`}>
       <ImageContent key={src} src={src} name={name} category={category} />
