@@ -41,7 +41,7 @@ Necesitas Node.js y npm instalados, además de los servicios del backend para ut
 4. Inicia los servicios del backend según las instrucciones de sus proyectos y ejecuta el frontend:
 
    ```bash
-   npm run dev
+   npm run build
    ```
 
 5. Abre la dirección que indique Vite en la terminal, normalmente `http://localhost:5173`.
