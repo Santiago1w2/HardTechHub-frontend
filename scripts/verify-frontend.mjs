@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 const frontend=process.env.FRONTEND_URL
 if (!frontend) throw new Error('Configura FRONTEND_URL')
-for(const route of ['/','/productos','/pedidos','/analitica','/admin/productos','/api/products','/api/admin/orders?page=1&limit=10','/inventory/1','/api/analytics/summary']){
+for(const route of ['/','/productos','/pedidos','/analitica','/admin/productos','/inventario','/admin/inventario/nuevo','/admin/inventario/1/editar','/api/products','/api/admin/orders?page=1&limit=10','/inventory/1','/api/analytics/summary']){
  const response=await fetch(new URL(route,frontend),{signal:AbortSignal.timeout(65000)})
  console.log(route,response.status,response.headers.get('content-type'))
  if(![200,404,503].includes(response.status)) process.exitCode=1

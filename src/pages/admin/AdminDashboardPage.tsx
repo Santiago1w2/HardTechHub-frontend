@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import {
   Package,
+  Boxes,
   ShoppingBag,
   ChartNoAxesColumn,
   ArrowRight,
@@ -61,6 +62,12 @@ export function AdminDashboardPage() {
             icon: Package,
             title: 'Productos',
             description: 'Crea, edita y desactiva componentes del catálogo.',
+          },
+          {
+            to: '/admin/inventario',
+            icon: Boxes,
+            title: 'Inventario',
+            description: 'Registra stock, ajusta cantidades y consulta reservas.',
           },
           {
             to: '/admin/pedidos',

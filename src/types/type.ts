@@ -155,10 +155,30 @@ export interface AdminOrderFilters {
   date_to?: string
 }
 
-export interface InventoryItem { product_id: number; stock: number; reserved_stock: number; available_stock: number; reorder_point: number; updated_at: string }
+export interface InventoryItem { product_id: number; stock: number; reserved_stock: number; available_stock: number; reorder_point: number; updated_at: string | null }
 export interface AnalyticsSummary { orders: number; sales: number; revenue: string; units_sold?: number | string; products_sold?: number }
 export interface AnalyticsCategory { category: string; units: number | string; revenue: string }
 export interface AnalyticsTrend { day: string; sales: number; revenue: string }
 export interface AnalyticsMovement { movement_type: string; movements: number; units: number | string }
 export interface TopViewsResponse { top_products: { product_id: number | string; views: number }[] }
 export interface AnalyticsRefresh { records: number; key: string; refreshed_at: string }
+
+export interface UpdateInventoryRequest {
+  stock: number
+  reorder_point: number
+}
+export interface CreateInventoryRequest extends UpdateInventoryRequest {
+  product_id: number
+}
+
+// Athena query() emits integer numbers, text/decimal strings and null cells.
+// The two SELECT * views have no fixed column definition in this repository.
+export type AnalyticsRow = Record<string, string | number | null>
+export interface AnalyticsProductCatalog {
+  products: AnalyticsRow[]
+  total: number
+}
+export interface AnalyticsCategoryBrandSummary {
+  summary: AnalyticsRow[]
+  total: number
+}

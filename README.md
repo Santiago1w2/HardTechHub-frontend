@@ -39,6 +39,9 @@ El backend debe permitir el origen del frontend mediante CORS (incluido el encab
 | /carrito, /checkout | Selección y creación de pedido |
 | /pedidos, /pedidos/:id | Listado paginado, detalle y estados |
 | /compatibilidad | Comprobación de componentes mediante su API |
+| /inventario, /admin/inventario | Listado de stock, reservas y disponibilidad |
+| /admin/inventario/nuevo | Registrar inventario por producto |
+| /admin/inventario/:id/editar | Ajustar stock total y punto de reposición |
 | /analitica | Dashboard de consultas Athena |
 | /admin | Resumen de gestión |
 | /admin/productos | CRUD, filtros y paginación del servidor |
@@ -51,7 +54,9 @@ El backend debe permitir el origen del frontend mediante CORS (incluido el encab
 
 El carrito se mantiene en memoria y se vacía al recargar. Crear un pedido envía solamente productos y cantidades; el servidor valida precios y reserva stock. La clave de idempotencia se conserva al reintentar la misma selección mientras el checkout está montado. Ante una reserva pendiente con ID se ofrece consultar el pedido y reintentar su reserva. Registrar o marcar un pedido como pagado no ejecuta una pasarela de pago.
 
-Analítica muestra únicamente respuestas reales. Sus consultas usan S3, Glue y Athena a través del microservicio; el navegador no accede directamente a AWS. “Actualizar datos” ejecuta la exportación real y “Consultar” vuelve a consultar las métricas. Un error AWS no se convierte en métricas de cero.
+Inventario utiliza el listado paginado por limit/offset; el backend no entrega un total global. Los nombres se relacionan con el catálogo y, si no están disponibles, se muestra el ID. Los formularios registran o reemplazan stock total y punto de reposición; no alteran reservas directamente.
+
+Analítica se organiza en Ventas y tendencias, Catálogo/categorías/marcas e Inventario/actividad. Las secciones cargan sus consultas al abrirlas. Las vistas product-catalog y category-brand-summary muestran las columnas realmente recibidas con paginación local. Analítica muestra únicamente respuestas reales. Sus consultas usan S3, Glue y Athena a través del microservicio; el navegador no accede directamente a AWS. “Actualizar datos” ejecuta la exportación real y “Consultar” vuelve a consultar las métricas. Un error AWS no se convierte en métricas de cero.
 
 ## Verificar
 

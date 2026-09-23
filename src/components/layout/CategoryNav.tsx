@@ -19,6 +19,7 @@ export function CategoryNav() {
               {item.value === 'RAM' ? 'RAM' : item.label}
             </Link>
           ))}
+        <Link to="/inventario">Inventario</Link>
         <Link to="/compatibilidad">Compatibilidad</Link>
         <Link className="offers-link" to="/productos?sort=price-asc">
           <Zap size={14} />

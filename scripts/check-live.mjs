@@ -21,6 +21,7 @@ for (const path of ['/api/categories','/api/brands','/api/admin/products?page=1&
 for (const path of ['/api/orders','/api/admin/orders?page=1&limit=10']) {
  assert.equal((await request('orders',path)).response.status,200)
 }
+assert.equal((await request('inventory','/inventory?limit=21&offset=0')).response.status,200)
 if (products.length) {
  const product=products[0]
  assert.equal((await request('catalog',`/api/products/${product.id}`)).response.status,200)
@@ -41,9 +42,11 @@ if(components.length) {
  assert.equal(typeof result.body.compatible,'boolean'); assert.ok(Array.isArray(result.body.messages))
 }
 let unavailable=0
-for (const name of ['summary','top-products','top-categories','trends','inventory-movements','events/count','top-views']) {
+const failed=[]
+for (const name of ['summary','top-products','top-categories','trends','inventory-movements','events/count','top-views','product-catalog','category-brand-summary']) {
  const result=await request('analytics','/api/analytics/'+name)
  if(result.response.status === 503) { unavailable++; console.log('  Pendiente: configuración/disponibilidad AWS; no se simulan métricas.') }
- else assert.equal(result.response.status,200)
+ else if(result.response.status !== 200) failed.push(name + ': ' + result.response.status)
 }
 console.log(`Comprobación terminada; consultas Analytics no disponibles: ${unavailable}.`)
+assert.deepEqual(failed,[], 'Endpoints Analytics ausentes o con error: ' + failed.join(', '))

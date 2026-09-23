@@ -1,6 +1,10 @@
 import axios from 'axios'
 
 const messages: Record<string, string> = {
+  'Inventory already exists': 'Este producto ya tiene inventario. Usa Ajustar stock para modificarlo.',
+  'Inventory not found': 'No encontramos inventario para este producto.',
+  'Cannot reduce stock below reservations': 'El stock no puede quedar por debajo de las unidades reservadas. Vuelve a consultar el inventario.',
+
   'Invalid category or brand':
     'La categoría o marca indicada no existe. Revisa sus identificadores.',
   'Product already exists': 'Ya existe un producto con ese SKU.',

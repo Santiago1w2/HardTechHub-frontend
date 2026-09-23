@@ -16,6 +16,8 @@ import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AdminCreateProductPage, AdminEditProductPage } from './pages/admin/AdminProductFormPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage'
+import { AdminInventoryPage } from './pages/admin/AdminInventoryPage'
+import { AdminCreateInventoryPage, AdminEditInventoryPage } from './pages/admin/AdminInventoryFormPage'
 import './App.css'
 import './management.css'
 export default function App() {
@@ -30,8 +32,12 @@ export default function App() {
     <Route path="pedidos" element={<OrdersPage />} />
     <Route path="pedidos/:id" element={<OrderDetailPage />} />
     <Route path="analitica" element={<div className="container page"><AdminAnalyticsPage /></div>} />
+    <Route path="inventario" element={<div className="container page"><AdminInventoryPage /></div>} />
     <Route path="admin" element={<AdminLayout />}>
       <Route index element={<AdminDashboardPage />} />
+      <Route path="inventario" element={<AdminInventoryPage />} />
+      <Route path="inventario/nuevo" element={<AdminCreateInventoryPage />} />
+      <Route path="inventario/:id/editar" element={<AdminEditInventoryPage />} />
       <Route path="productos" element={<AdminProductsPage />} />
       <Route path="productos/nuevo" element={<AdminCreateProductPage />} />
       <Route path="productos/:id/editar" element={<AdminEditProductPage />} />

@@ -26,6 +26,8 @@ const modules = [
   'components/common/Pagination',
   'components/common/ConfirmDialog',
   'components/admin/ProductForm',
+  'components/admin/InventoryForm',
+  'components/admin/AnalyticsDataTable',
   'components/common/States',
 ]
 for (const name of modules) {
@@ -435,4 +437,92 @@ test('order transitions do not offer unsupported operations', async () => {
  assert.deepEqual(orderTransitions.PAID,['SHIPPED'])
  assert.deepEqual(orderTransitions.SHIPPED,[])
  assert.deepEqual(orderTransitions.CANCELLED,[])
+})
+
+test('inventory list uses offset and limit and preserves cancellation', async () => {
+ const inventory=await load('services/inventoryService')
+ const rows=[{product_id:42,stock:20,reserved_stock:3,available_stock:17,reorder_point:4,updated_at:null}]
+ const calls=mock(api.inventoryApi,rows)
+ const controller=new AbortController()
+ assert.deepEqual(await inventory.getInventoryList(21,20,controller.signal),rows)
+ assert.equal(calls[0].url,'/inventory')
+ assert.deepEqual(calls[0].params,{limit:21,offset:20})
+ assert.equal(calls[0].signal,controller.signal)
+})
+test('inventory creation and stock replacement send only supported fields', async () => {
+ const inventory=await load('services/inventoryService')
+ const response={product_id:42,stock:20,reserved_stock:3,available_stock:17,reorder_point:4,updated_at:null}
+ const calls=mock(api.inventoryApi,response)
+ const payload={product_id:42,stock:20,reorder_point:4,reserved_stock:999}
+ assert.deepEqual(await inventory.createInventory(payload),response)
+ assert.equal(calls[0].method,'post')
+ assert.equal(calls[0].url,'/inventory')
+ assert.deepEqual(JSON.parse(calls[0].data),{product_id:42,stock:20,reorder_point:4})
+ await inventory.updateInventory(42,payload)
+ assert.equal(calls[1].method,'put')
+ assert.equal(calls[1].url,'/inventory/42')
+ assert.deepEqual(JSON.parse(calls[1].data),{stock:20,reorder_point:4})
+})
+test('inventory rejects invalid IDs and stock integers before HTTP', async () => {
+ const inventory=await load('services/inventoryService')
+ const calls=mock(api.inventoryApi,{})
+ for(const product_id of [0,-1,1.5,Number.MAX_SAFE_INTEGER+1]){
+  await assert.rejects(inventory.createInventory({product_id,stock:0,reorder_point:0}))
+ }
+ for(const stock of [-1,1.5,2147483648,NaN,Infinity]){
+  await assert.rejects(inventory.updateInventory(1,{stock,reorder_point:0}))
+ }
+ for(const reorder_point of [-1,0.5,2147483648]){
+  await assert.rejects(inventory.createInventory({product_id:1,stock:0,reorder_point}))
+ }
+ assert.equal(calls.length,0)
+ await inventory.createInventory({product_id:1,stock:0,reorder_point:0})
+ assert.equal(calls.length,1)
+})
+test('inventory conflict messages distinguish duplicate records from reservations', () => {
+ const message=detail=>errors.getApiErrorMessage({isAxiosError:true,response:{status:409,data:{detail}}})
+ assert.match(message('Inventory already exists'),/ya tiene inventario/)
+ assert.match(message('Cannot reduce stock below reservations'),/unidades reservadas/)
+})
+test('new analytical views preserve actual columns, totals and cancellation', async () => {
+ const controller=new AbortController()
+ for(const [method,path,key] of [
+  ['getProductCatalogAnalytics','product-catalog','products'],
+  ['getCategoryBrandSummary','category-brand-summary','summary'],
+ ]){
+  const body={ [key]:[{category:'CPU',brand:'Example',external_column:'3.50',nullable_value:null}],total:1 }
+  const calls=mock(api.analyticsApi,body)
+  assert.deepEqual(await analytics[method](controller.signal),body)
+  assert.equal(calls[0].url,'/api/analytics/'+path)
+  assert.equal(calls[0].signal,controller.signal)
+ }
+})
+test('inventory forms reuse controls and prevent editing reserved stock or product identity', async () => {
+ const React=require('react')
+ const {renderToString}=require('react-dom/server')
+ const {MemoryRouter}=require('react-router-dom')
+ const {InventoryForm}=await load('components/admin/InventoryForm')
+ const item={product_id:42,stock:20,reserved_stock:3,available_stock:17,reorder_point:4,updated_at:null}
+ const html=renderToString(React.createElement(MemoryRouter,null,
+  React.createElement(InventoryForm,{item,products:[],loading:false,onSave:async()=>{}})))
+ assert.match(html,/management-card management-form/)
+ assert.match(html,/readOnly=""/)
+ assert.match(html,/min="3"/)
+ assert.match(html,/Reservado:.*3/)
+ assert.doesNotMatch(html,/name="reserved_stock"/)
+})
+test('analytical table renders only returned columns and supports empty and null data', async () => {
+ const React=require('react')
+ const {renderToString}=require('react-dom/server')
+ const {AnalyticsDataTable}=await load('components/admin/AnalyticsDataTable')
+ const html=renderToString(React.createElement(AnalyticsDataTable,{
+  rows:[{category:'CPU',brand:'<script>unsafe</script>',source_value:'12.50',missing_value:null}],total:1,label:'Catalog view'}))
+ assert.match(html,/source value/)
+ assert.match(html,/12.50/)
+ assert.match(html,/—/)
+ assert.match(html,/&lt;script&gt;/)
+ assert.doesNotMatch(html,/<script>/)
+ assert.match(html,/table-scroll/)
+ const empty=renderToString(React.createElement(AnalyticsDataTable,{rows:[],total:0,label:'Empty view'}))
+ assert.match(empty,/No hay datos registrados/)
 })

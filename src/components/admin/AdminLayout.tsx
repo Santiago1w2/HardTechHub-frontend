@@ -17,6 +17,7 @@ export function AdminLayout() {
           Resumen
         </NavLink>
         <NavLink to="/admin/productos">Productos</NavLink>
+        <NavLink to="/admin/inventario">Inventario</NavLink>
         <NavLink to="/admin/pedidos">Pedidos</NavLink>
         <NavLink to="/admin/analitica">Analítica</NavLink>
       </nav>

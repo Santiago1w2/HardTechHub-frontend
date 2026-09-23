@@ -110,6 +110,6 @@ export function Header() {
  <Link className="header-action orders-action" to="/pedidos"><Package size={23}/><span>Pedidos</span></Link>
  <Link className="cart-link" to="/carrito" aria-label={`Carrito, ${totalItems} productos`}><ShoppingCart size={25}/><span className="cart-count">{totalItems}</span></Link>
  </div></div>{menu && <nav className="mobile-menu" aria-label="Navegación móvil">
- {[['/productos','Productos'],['/compatibilidad','Compatibilidad'],['/pedidos','Pedidos'],['/analitica','Analítica'],['/admin','Gestionar']].map(([path,label]) => <Link key={path} to={path} onClick={()=>setMenu(false)}>{label}</Link>)}
+ {[['/productos','Productos'],['/compatibilidad','Compatibilidad'],['/inventario','Inventario'],['/pedidos','Pedidos'],['/analitica','Analítica'],['/admin','Gestionar']].map(([path,label]) => <Link key={path} to={path} onClick={()=>setMenu(false)}>{label}</Link>)}
  </nav>}</header>
 }

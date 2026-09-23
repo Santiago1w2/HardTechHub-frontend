@@ -89,3 +89,101 @@ Eliminación: pages/LoginPage.tsx, pages/RegisterPage.tsx, pages/ProfilePage.tsx
 Modificación: App.tsx, App.css, api/axios.ts, api/errors.ts, types/type.ts, vite-env.d.ts, providers/AppProviders.tsx; hooks/index.ts, useProductPurchase.ts, useCreateOrder.ts, useAdminOrders.ts, useAdminOrderPage.ts, useAdminProducts.ts, useAnalytics.ts; services/ordersService.ts y analyticsServices.ts; componentes Header, Footer, CategoryNav, Hero, CategoryGrid, ProductFilters, OrderStatusBadge y OrderStatusEditor; páginas Home, Help, Cart, Checkout, Orders, OrderDetail, Product, AdminOrders, AdminDashboard y AdminAnalytics; vite.config.ts, .env/.env.example, tests/integration.test.mjs, README.md y este documento.
 
 Se conservaron cambios previos válidos en los formularios, CRUD, paginación, compatibilidad y estilos. El estado Git puede incluir otros archivos modificados antes de esta intervención.
+
+
+## Ampliación: gestión de Inventario y vistas de Analytics
+
+Esta ampliación conserva el frontend y las APIs anteriores. Solo cambia archivos de front-end.
+
+### Inventario
+
+Rutas: /inventario y /admin/inventario; alta en /admin/inventario/nuevo; ajuste en /admin/inventario/:id/editar.
+
+| Operación | Endpoint | Contrato |
+| --- | --- | --- |
+| Listado | GET /inventory?limit=21&offset=N | Array de product_id, stock, reserved_stock, available_stock, reorder_point, updated_at (puede ser null) |
+| Consulta por producto | GET /inventory/{product_id} | Se mantiene la integración existente |
+| Registrar | POST /inventory | {product_id, stock, reorder_point}; respuesta InventoryItem |
+| Ajustar | PUT /inventory/{product_id} | {stock, reorder_point}; respuesta InventoryItem |
+
+El listado muestra 20 registros y solicita uno adicional para saber si hay siguiente página. No calcula un total inexistente. Usa nombres reales del catálogo activo y conserva el ID cuando no hay nombre. El catálogo puede fallar sin ocultar el stock.
+
+El formulario reutiliza management-card, management-form, form-grid, inputs, botones y LoadingSpinner. Los valores deben ser enteros: product_id positivo seguro; stock/reorder_point entre 0 y 2147483647. En edición el producto es fijo y el stock no puede quedar por debajo de la reserva conocida. El backend sigue resolviendo conflictos de reservas concurrentes.
+
+Guardar vuelve al listado, lo consulta nuevamente y muestra éxito. Errores de duplicado y stock inferior a reservas tienen mensajes específicos. No existen acciones de reserva, liberación, confirmación ni llamadas directas a movimientos.
+
+### Los diez endpoints de Analítica
+
+Todos están bajo /api/analytics.
+
+| Endpoint | Visualización |
+| --- | --- |
+| GET /summary | Resumen general de pedidos, ventas, ingresos, unidades y productos vendidos |
+| GET /events/count | Total y distribución de eventos |
+| GET /top-products | Productos vendidos: unidades e ingresos |
+| GET /top-categories | Categorías vendidas: unidades e ingresos |
+| GET /trends | Ventas e ingresos por día |
+| GET /inventory-movements | Movimientos y unidades por tipo |
+| GET /top-views | Productos más vistos |
+| POST /refresh | Actualización manual, loading, resultado y reconsulta |
+| GET /product-catalog | Catálogo analítico: tabla paginada de products y total recibido |
+| GET /category-brand-summary | Tabla paginada de summary y total recibido |
+
+Se reutiliza admin-nav para tres secciones: Ventas y tendencias; Catálogo, categorías y marcas; Inventario y actividad. Se mantienen management-card, analytics-grid, management-table, table-scroll y Pagination. Las tablas nuevas tienen desplazamiento horizontal y los mismos puntos de adaptación móvil. No se cambian colores, tipografías ni identidad visual.
+
+Las dos rutas nuevas ejecutan SELECT * sobre vw_product_catalog y vw_category_brand_summary. El repositorio no incluye las definiciones de esas vistas. Por ello el frontend no supone columnas como precio promedio o cantidad de productos: usa exactamente las devueltas. Los tipos son {products: AnalyticsRow[], total: number} y {summary: AnalyticsRow[], total: number}; AnalyticsRow admite string, number o null, conforme al convertidor real de Athena. Las celdas se renderizan como texto, no HTML.
+
+No se crean vistas Athena desde el frontend. Publicar las rutas no sustituye configurar esas vistas en el catálogo AWS. Refresh conserva su implementación real y no se ejecuta automáticamente; después de completarse reconsulta los datos.
+
+### Autenticación y variables
+
+No se reintroducen login, registro, JWT, contexto, guardas ni roles. Se revisaron las referencias de src y se retiró el selector CSS residual #password-help. Los archivos de autenticación ya habían sido eliminados en la intervención anterior. Axios no añade Authorization.
+
+Se conservan sin cambios:
+- Catalog: VITE_CATALOG_API_URL.
+- Order: VITE_ORDER_API_URL.
+- Compatibility: VITE_COMPATIBILITY_API_URL.
+- Analytics: VITE_ANALYTICS_API_URL.
+- Inventory: VITE_INVENTORY_API_URL.
+
+No fue necesario cambiar .env.example. No se incorporaron hosts a componentes ni credenciales AWS.
+
+### Archivos de esta ampliación
+
+Creados:
+- src/components/admin/InventoryForm.tsx
+- src/components/admin/AnalyticsDataTable.tsx
+- src/hooks/useInventoryPage.ts
+- src/pages/admin/AdminInventoryPage.tsx
+- src/pages/admin/AdminInventoryFormPage.tsx
+
+Modificados:
+- src/services/inventoryService.ts y analyticsServices.ts
+- src/hooks/useAnalytics.ts
+- src/types/type.ts
+- src/api/errors.ts
+- src/App.tsx
+- src/components/admin/AdminLayout.tsx
+- src/components/layout/Header.tsx y CategoryNav.tsx
+- src/pages/admin/AdminAnalyticsPage.tsx
+- src/management.css (solo eliminación del selector obsoleto)
+- tests/integration.test.mjs
+- scripts/check-live.mjs y verify-frontend.mjs
+- README.md e INTEGRACION.md
+
+No se eliminaron archivos de aplicación en esta ampliación.
+
+### Resultado de validación de la ampliación
+
+- npm run build: aprobado, incluido TypeScript.
+- npm run lint: aprobado.
+- npm test: 24 pruebas aprobadas. Incluyen contratos POST/PUT, validaciones de enteros, payloads sin reservas editables, errores 409, cancelación de consultas, columnas dinámicas, null, escape HTML y renderizado de formularios.
+- APIs locales de Catalog, Orders, Compatibility y GET /inventory: 200.
+- Las nuevas páginas entregan HTML 200 a través de Vite; no hay módulos TypeScript sin referencias.
+- La comprobación HTTP integral detecta dos pendientes reales y termina con error: el contenedor Analytics en localhost:8005 devuelve 404 para product-catalog y category-brand-summary. Su OpenAPI tampoco contiene esas rutas, aunque sí están en el código fuente actual.
+- Las otras siete consultas analíticas devuelven 503 por configuración/disponibilidad AWS.
+- Es necesario desplegar la versión actual de Analytics y configurar AWS/vistas para validar ambas respuestas reales. No se reconstruyó ni modificó el backend en esta tarea.
+- No se ejecutaron altas/ajustes contra la base persistente: se verificaron sus contratos mediante pruebas automatizadas.
+- La comprobación visual interactiva en navegador sigue pendiente; no equivale a las comprobaciones HTTP y renderizado de pruebas.
+
+Para repetir: npm test; npm run lint; npm run build. Con las URLs correctas, node --env-file=.env scripts/check-live.mjs. El script conserva el fallo cuando faltan endpoints, en lugar de ocultarlo.

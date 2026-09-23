@@ -317,10 +317,6 @@ textarea:focus-visible {
 .analytics-grid h3 + .muted {
   margin-top: 18px;
 }
-#password-help {
-  margin-top: 10px;
-  font-size: 11px;
-}
 @media (max-width: 1100px) {
   .admin-header-link span {
     display: none;

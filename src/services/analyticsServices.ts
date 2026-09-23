@@ -1,5 +1,5 @@
 import { analyticsApi } from '../api/axios'
-import type { AnalyticsSummary, TopProductsResponse, EventCountResponse, AnalyticsCategory, AnalyticsTrend, AnalyticsMovement, TopViewsResponse, AnalyticsRefresh } from '../types/type'
+import type { AnalyticsSummary, TopProductsResponse, EventCountResponse, AnalyticsCategory, AnalyticsTrend, AnalyticsMovement, TopViewsResponse, AnalyticsRefresh, AnalyticsProductCatalog, AnalyticsCategoryBrandSummary } from '../types/type'
 
 export async function getSummary(signal?: AbortSignal): Promise<AnalyticsSummary> {
   return (await analyticsApi.get<AnalyticsSummary>('/api/analytics/summary', { signal })).data
@@ -24,4 +24,12 @@ export async function getTopViews(signal?: AbortSignal): Promise<TopViewsRespons
 }
 export async function refreshAnalytics(): Promise<AnalyticsRefresh> {
   return (await analyticsApi.post<AnalyticsRefresh>('/api/analytics/refresh', undefined, { timeout: 120_000 })).data
+}
+
+export async function getProductCatalogAnalytics(signal?: AbortSignal): Promise<AnalyticsProductCatalog> {
+  return (await analyticsApi.get<AnalyticsProductCatalog>('/api/analytics/product-catalog', { signal })).data
+}
+
+export async function getCategoryBrandSummary(signal?: AbortSignal): Promise<AnalyticsCategoryBrandSummary> {
+  return (await analyticsApi.get<AnalyticsCategoryBrandSummary>('/api/analytics/category-brand-summary', { signal })).data
 }
