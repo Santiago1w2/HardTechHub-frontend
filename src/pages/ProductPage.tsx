@@ -1,3 +1,4 @@
+import { useInventory } from '../hooks/useInventory'
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ShoppingCart, ArrowRight, Package, ChevronRight } from 'lucide-react'
@@ -16,9 +17,10 @@ export function ProductPage() {
 }
 function ProductDetail({ id }: { id: number }) {
   const { product, loading, error, refetch } = useProduct(id)
+  const inventory = useInventory(id)
   const [quantity, setQuantity] = useState(1)
   const { add, feedback, failed } = useProductPurchase()
-  console.log(product);
+
   return (
     <div className="container page">
       <Breadcrumb
@@ -71,6 +73,7 @@ function ProductDetail({ id }: { id: number }) {
                 {product.description ||
                   'Consulta las especificaciones de este componente a continuación.'}
               </p>
+              <div aria-live="polite">{inventory.loading ? <p>Consultando disponibilidad…</p> : inventory.error ? <ErrorState message={inventory.error} retry={inventory.refetch}/> : <p>{inventory.data ? `Disponibles: ${inventory.data.available_stock}` : 'Sin inventario registrado.'}</p>}</div>
               <div className="detail-quantity">
                 <span>Cantidad</span>
                 <QuantitySelector

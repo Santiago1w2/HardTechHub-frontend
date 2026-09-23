@@ -12,24 +12,65 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const temporary = await mkdtemp(join(tmpdir(), 'hardtech-api-test-'))
 after(() => rm(temporary, { recursive: true, force: true }))
 const modules = [
-  'api/axios', 'api/errors', 'services/authService', 'services/catalogService',
-  'services/ordersService', 'services/analyticsServices',
+  'api/axios',
+  'api/errors',
+  'services/catalogService',
+  'services/inventoryService',
+  'utils/orders',
+  'services/ordersService',
+  'services/analyticsServices',
+  'services/compatibilityService',
+  'utils/productForm',
+  'utils/compatibility',
+  'utils/pagination',
+  'components/common/Pagination',
+  'components/common/ConfirmDialog',
+  'components/admin/ProductForm',
+  'components/common/States',
 ]
 for (const name of modules) {
-  const source = await readFile(join(root, 'src', `${name}.ts`), 'utf8')
+  const extension = name.startsWith('components/') ? 'tsx' : 'ts'
+  const source = await readFile(
+    join(root, 'src', `${name}.${extension}`),
+    'utf8',
+  )
   let code = ts.transpileModule(source, {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext,
+      jsx: ts.JsxEmit.ReactJSX,
+    },
   }).outputText
-  code = code.replaceAll('import.meta.env', '({ DEV: true })')
-    .replace(/from ['"]axios['"]/g, `from '${pathToFileURL(require.resolve('axios')).href}'`)
+  code = code
+    .replaceAll('import.meta.env', '({ DEV: true, VITE_CATALOG_API_URL: "http://catalog.test", VITE_ORDER_API_URL: "http://orders.test", VITE_INVENTORY_API_URL: "http://inventory.test", VITE_ANALYTICS_API_URL: "http://analytics.test", VITE_COMPATIBILITY_API_URL: "http://compatibility.test" })')
+    .replace(
+      /from ['"]axios['"]/g,
+      `from '${pathToFileURL(require.resolve('axios')).href}'`,
+    )
     .replace(/from (['"])(\.\.?\/[^'"]+)\1/g, 'from $1$2.mjs$1')
+  for (const dependency of [
+    'react',
+    'react/jsx-runtime',
+    'react-router-dom',
+    'lucide-react',
+  ]) {
+    code = code
+      .replaceAll(
+        `from "${dependency}"`,
+        `from '${pathToFileURL(require.resolve(dependency)).href}'`,
+      )
+      .replaceAll(
+        `from '${dependency}'`,
+        `from '${pathToFileURL(require.resolve(dependency)).href}'`,
+      )
+  }
   const target = join(temporary, `${name}.mjs`)
   await mkdir(dirname(target), { recursive: true })
   await writeFile(target, code)
 }
-const load = name => import(pathToFileURL(join(temporary, `${name}.mjs`)).href)
+const load = (name) =>
+  import(pathToFileURL(join(temporary, `${name}.mjs`)).href)
 const api = await load('api/axios')
-const auth = await load('services/authService')
 const catalog = await load('services/catalogService')
 const orders = await load('services/ordersService')
 const analytics = await load('services/analyticsServices')
@@ -37,43 +78,32 @@ const errors = await load('api/errors')
 
 function mock(client, data) {
   const calls = []
-  client.defaults.adapter = async config => {
+  client.defaults.adapter = async (config) => {
     calls.push(config)
     return { data, status: 200, statusText: 'OK', headers: {}, config }
   }
   return calls
 }
 
-test('JWT headers are applied and removed for every service', () => {
-  api.setAccessToken('example')
-  for (const client of [api.identityApi, api.catalogApi, api.orderApi, api.analyticsApi]) {
-    assert.equal(client.defaults.headers.common.Authorization, 'Bearer example')
-    assert.equal(client.defaults.baseURL, '/')
-  }
-  api.setAccessToken(null)
-  assert.equal(api.identityApi.defaults.headers.common.Authorization, undefined)
-})
 
-test('login contract and explicit profile request', async () => {
-  const calls = mock(api.identityApi, { access_token: 'token', token_type: 'bearer' })
-  assert.equal((await auth.login({ email: 'test@example.com', password: 'password' })).access_token, 'token')
-  assert.equal(calls[0].url, '/api/auth/login')
-  assert.equal(JSON.parse(calls[0].data).email, 'test@example.com')
-  await auth.getProfile()
-  assert.equal(calls[1].url, '/api/auth/me')
-})
 
 test('orders reject empty or nonpositive quantities before HTTP', async () => {
   const calls = mock(api.orderApi, { order_id: 1 })
-  for (const items of [[], [{ product_id: 1, quantity: 0 }], [{ product_id: 1, quantity: -1 }], [{ product_id: 1, quantity: 1.5 }]]) {
-    await assert.rejects(orders.createOrder({ user_id: 'user', items }))
+  for (const items of [
+    [],
+    [{ product_id: 1, quantity: 0 }],
+    [{ product_id: 1, quantity: -1 }],
+    [{ product_id: 1, quantity: 1.5 }],
+  ]) {
+    await assert.rejects(orders.createOrder({ items }, 'request-1'))
   }
   assert.equal(calls.length, 0)
-  const payload = { user_id: 'user', items: [{ product_id: 1, quantity: 2 }] }
-  await orders.createOrder(payload)
+  const payload = { items: [{ product_id: 1, quantity: 2 }] }
+  await orders.createOrder(payload, 'request-1')
   assert.deepEqual(JSON.parse(calls[0].data), payload)
-  await orders.getMyOrders('user/name')
-  assert.equal(calls[1].url, '/api/orders/user/user%2Fname')
+  assert.equal(calls[0].headers.get('Idempotency-Key'), 'request-1')
+  await orders.getAllOrders()
+  assert.equal(calls[1].url, '/api/orders')
 })
 
 test('catalog uses correct verbs and propagates query cancellation', async () => {
@@ -81,7 +111,14 @@ test('catalog uses correct verbs and propagates query cancellation', async () =>
   const controller = new AbortController()
   await catalog.getProducts(controller.signal)
   assert.equal(calls[0].signal, controller.signal)
-  await catalog.updateProduct(2, { name: 'CPU', description: '', price: 10, specs: {}, image_url: '', is_active: true })
+  await catalog.updateProduct(2, {
+    name: 'CPU',
+    description: '',
+    price: 10,
+    specs: {},
+    image_url: '',
+    is_active: true,
+  })
   assert.equal(calls[1].method, 'put')
   assert.equal(calls[1].url, '/api/products/2')
   await catalog.deleteProduct(2)
@@ -92,6 +129,310 @@ test('analytics endpoints and FastAPI validation errors', async () => {
   const calls = mock(api.analyticsApi, {})
   await analytics.getEventCount()
   await analytics.getTopProducts()
-  assert.deepEqual(calls.map(call => call.url), ['/api/analytics/events/count', '/api/analytics/top-products'])
-  assert.equal(errors.getApiErrorMessage({ isAxiosError: true, response: { data: { detail: [{ msg: 'Email inválido' }] } } }), 'Email inválido')
+  assert.deepEqual(
+    calls.map((call) => call.url),
+    ['/api/analytics/events/count', '/api/analytics/top-products'],
+  )
+  assert.equal(
+    errors.getApiErrorMessage({
+      isAxiosError: true,
+      response: { data: { detail: [{ msg: 'Email inválido' }] } },
+    }),
+    'Email inválido',
+  )
+})
+
+const compatibility = await load('services/compatibilityService')
+const productForm = await load('utils/productForm')
+const componentMapping = await load('utils/compatibility')
+const axios = require('axios')
+
+
+test('admin order list, detail and status use the real contracts', async () => {
+  const calls = mock(api.orderApi, { order_id: 7, status: 'SHIPPED' })
+  await orders.getAllOrders()
+  await orders.getOrder(7)
+  assert.deepEqual(await orders.updateOrderStatus(7, 'SHIPPED'), {
+    order_id: 7,
+    status: 'SHIPPED',
+  })
+  assert.deepEqual(
+    calls.map((call) => [call.method, call.url]),
+    [
+      ['get', '/api/orders'],
+      ['get', '/api/orders/7'],
+      ['patch', '/api/orders/7/status'],
+    ],
+  )
+  assert.deepEqual(JSON.parse(calls[2].data), { status: 'SHIPPED' })
+})
+
+test('compatibility submits typed selections and returns the backend decision unchanged', async () => {
+  const response = { compatible: false, messages: ['Sockets diferentes'] }
+  const calls = mock(api.compatibilityApi, response)
+  const payload = {
+    components: [
+      { type: 'cpu', product_id: 1 },
+      { type: 'motherboard', product_id: 2 },
+    ],
+  }
+  assert.deepEqual(await compatibility.postCompatibility(payload), response)
+  assert.equal(calls[0].method, 'post')
+  assert.equal(calls[0].url, '/api/compatibility/check')
+  assert.deepEqual(JSON.parse(calls[0].data), payload)
+  for (const components of [
+    [],
+    [{ type: 'cpu', product_id: 0 }],
+    [{ type: 'storage', product_id: 1 }],
+    [
+      { type: 'cpu', product_id: 1 },
+      { type: 'cpu', product_id: 2 },
+    ],
+  ])
+    await assert.rejects(compatibility.postCompatibility({ components }))
+  assert.equal(calls.length, 1)
+  assert.equal(
+    componentMapping.componentTypeForCategory('Motherboard'),
+    'motherboard',
+  )
+  assert.equal(componentMapping.componentTypeForCategory('Storage'), undefined)
+})
+
+
+test('product edits send only changed supported fields and preserve optional values', async () => {
+  const product = {
+    id: 1,
+    name: 'CPU',
+    sku: 'SKU',
+    price: '100.00',
+    description: null,
+    image_url: null,
+    specs: { socket: 'AM5' },
+    is_active: true,
+    category: 'CPU',
+    brand: 'AMD',
+  }
+  const values = productForm.productFormValues(product)
+  assert.deepEqual(productForm.buildProductUpdate(values, product), {})
+  assert.deepEqual(
+    productForm.buildProductUpdate({ ...values, price: '120.50' }, product),
+    { price: 120.5 },
+  )
+  const calls = mock(api.catalogApi, { updated: true })
+  await catalog.updateProduct(
+    1,
+    productForm.buildProductUpdate({ ...values, price: '120.50' }, product),
+  )
+  assert.deepEqual(JSON.parse(calls[0].data), { price: 120.5 })
+  for (const invalid of [
+    { specs: '[]' },
+    { specs: 'null' },
+    { specs: '{' },
+    { price: '-1' },
+    { price: '2.333' },
+    { name: ' ' },
+  ]) {
+    assert.throws(() =>
+      productForm.buildProductUpdate({ ...values, ...invalid }, product),
+    )
+  }
+  assert.throws(() => productForm.buildCreateProduct(values))
+  const create = productForm.buildCreateProduct({
+    ...values,
+    category_id: '6',
+    brand_id: '9',
+  })
+  assert.equal(create.category_id, 6)
+  assert.equal(create.brand_id, 9)
+  assert.equal('is_active' in create, false)
+  assert.equal('description' in create, false)
+})
+
+
+
+test('service failures use readable messages without leaking internal HTTP errors', () => {
+  for (const status of [401, 403, 404, 500, 503]) {
+    const result = errors.getApiErrorMessage({
+      isAxiosError: true,
+      response: {
+        status,
+        data: { detail: 'Request failed with status code ' + status },
+      },
+    })
+    assert.doesNotMatch(result, /AxiosError|Request failed|HTTP|500|503/)
+  }
+})
+
+
+test('catalog options load real IDs and preserve them when creating a product', async () => {
+  const calls = mock(api.catalogApi, [{ id: 51, name: 'CPU' }])
+  const categories = await catalog.getCategories()
+  await catalog.getBrands()
+  assert.deepEqual(
+    calls.map((call) => call.url),
+    ['/api/categories', '/api/brands'],
+  )
+  const values = productForm.productFormValues()
+  const payload = productForm.buildCreateProduct({
+    ...values,
+    category_id: String(categories[0].id),
+    brand_id: '27',
+    sku: 'REAL-IDS',
+    name: 'CPU',
+    price: '120',
+  })
+  await catalog.createProduct(payload)
+  assert.equal(JSON.parse(calls[2].data).category_id, 51)
+  assert.equal(JSON.parse(calls[2].data).brand_id, 27)
+})
+
+test('admin products use the catalog client with server filters and cancellation', async () => {
+  const response = {
+    items: [{ id: 7, is_active: false }],
+    page: 2,
+    limit: 10,
+    total: 11,
+  }
+  const calls = mock(api.catalogApi, response)
+  const signal = new AbortController().signal
+  const filters = { page: 2, limit: 10, status: 'inactive', q: 'CPU & GPU' }
+  assert.deepEqual(await catalog.getAdminProducts(filters, signal), response)
+  assert.equal(calls[0].url, '/api/admin/products')
+  assert.equal(calls[0].method, 'get')
+  assert.equal(calls[0].signal, signal)
+  assert.deepEqual(calls[0].params, filters)
+})
+
+test('admin orders send pagination, state, ID and inclusive dates', async () => {
+  const response = { items: [], page: 3, limit: 20, total: 45 }
+  const calls = mock(api.orderApi, response)
+  const filters = {
+    page: 3,
+    limit: 20,
+    status: 'PAID',
+    order_id: 22,
+    date_from: '2026-01-01',
+    date_to: '2026-01-31',
+  }
+  const signal = new AbortController().signal
+  assert.deepEqual(await orders.getAdminOrders(filters, signal), response)
+  assert.equal(calls[0].url, '/api/admin/orders')
+  assert.equal(calls[0].method, 'get')
+  assert.deepEqual(calls[0].params, filters)
+  assert.equal(calls[0].signal, signal)
+})
+
+test('pagination preserves filters and new searches reset to the first page', async () => {
+  const pagination = await load('utils/pagination')
+  assert.deepEqual(
+    pagination.readPagination(new URLSearchParams('page=-1&limit=999')),
+    { page: 1, limit: 20 },
+  )
+  assert.deepEqual(
+    pagination.readPagination(new URLSearchParams('page=2&limit=50')),
+    { page: 2, limit: 50 },
+  )
+  const current = new URLSearchParams('status=inactive&q=CPU&page=2&limit=20')
+  const next = pagination.paginationParams(current, 3, 20)
+  assert.equal(next.get('status'), 'inactive')
+  assert.equal(next.get('q'), 'CPU')
+  assert.equal(next.get('page'), '3')
+  assert.equal(current.get('page'), '2')
+  const filtered = pagination.filterParams(
+    { q: '  AMD  ', status: 'active' },
+    50,
+  )
+  assert.equal(filtered.get('page'), '1')
+  assert.equal(filtered.get('limit'), '50')
+  assert.equal(filtered.get('q'), 'AMD')
+})
+
+test('product form renders category and brand names with their actual IDs', async () => {
+  const React = require('react')
+  const { renderToString } = require('react-dom/server')
+  const { MemoryRouter } = require('react-router-dom')
+  const { ProductForm } = await load('components/admin/ProductForm')
+  const html = renderToString(
+    React.createElement(
+      MemoryRouter,
+      null,
+      React.createElement(ProductForm, {
+        loading: false,
+        onSave: async () => {},
+        categories: [{ id: 51, name: 'CPU' }],
+        brands: [{ id: 27, name: 'AMD' }],
+      }),
+    ),
+  )
+  assert.match(html, /<option value="51">CPU<\/option>/)
+  assert.match(html, /<option value="27">AMD<\/option>/)
+  assert.doesNotMatch(html, /Categoría \(ID\)|Marca \(ID\)/)
+})
+
+test('pagination renders totals and disables unavailable page navigation', async () => {
+  const React = require('react')
+  const { renderToString } = require('react-dom/server')
+  const { Pagination } = await load('components/common/Pagination')
+  const html = renderToString(
+    React.createElement(Pagination, {
+      page: 1,
+      limit: 20,
+      total: 0,
+      loading: false,
+      onChange: () => {},
+    }),
+  )
+  assert.match(html, /0 resultados/)
+  assert.match(html, /<button[^>]*disabled=""[^>]*>Anterior<\/button>/)
+  assert.match(html, /<button[^>]*disabled=""[^>]*>Siguiente<\/button>/)
+})
+test('analytics keeps sales, views, categories, trends and movements contracts separate', async () => {
+ const cases = [
+  ['getSummary', '/summary', {orders: 2, sales: 1, revenue: '35.00'}, undefined],
+  ['getTopProducts', '/top-products', {top_products: [{product_id: 2, product_name:'CPU', units:3, revenue:'35.00'}]}, undefined],
+  ['getTopCategories', '/top-categories', {categories: [{category:'CPU',units:3,revenue:'35.00'}]}, 'categories'],
+  ['getTrends', '/trends', {trends:[{day:'2026-09-23',sales:1,revenue:'35.00'}]}, 'trends'],
+  ['getInventoryMovements', '/inventory-movements', {movements:[{movement_type:'SALE',movements:1,units:3}]}, 'movements'],
+  ['getTopViews', '/top-views', {top_products:[{product_id:2,views:4}]}, undefined],
+ ]
+ for (const [fn,path,body,field] of cases) {
+  const calls=mock(api.analyticsApi,body)
+  assert.deepEqual(await analytics[fn](),field ? body[field] : body)
+  assert.equal(calls[0].url,'/api/analytics'+path)
+ }
+ const calls=mock(api.analyticsApi,{records:10,key:'snapshot',refreshed_at:'2026-09-23T12:00:00Z'})
+ await analytics.refreshAnalytics()
+ assert.equal(calls[0].method,'post')
+ assert.equal(calls[0].url,'/api/analytics/refresh')
+ assert.equal(calls[0].timeout,120000)
+})
+test('inventory distinguishes absent stock from service failure', async () => {
+ const inventory=await load('services/inventoryService')
+ const body={product_id:2,stock:10,reserved_stock:3,available_stock:7,reorder_point:2,updated_at:'2026-09-23'}
+ const calls=mock(api.inventoryApi,body)
+ assert.deepEqual(await inventory.getInventory(2),body)
+ assert.equal(calls[0].url,'/inventory/2')
+ for(const status of [404,503]){
+  api.inventoryApi.defaults.adapter=async ()=>{throw new axios.AxiosError('failure',undefined,undefined,undefined,{status,data:{},headers:{},config:{}})}
+  if(status===404) assert.equal(await inventory.getInventory(2),null)
+  else await assert.rejects(inventory.getInventory(2))
+ }
+})
+test('pending reservations expose their order and use the dedicated retry endpoint', async () => {
+ const calls=mock(api.orderApi,{order_id:8,status:'PENDING',total_amount:'35.00'})
+ await orders.retryOrder(8)
+ assert.equal(calls[0].url,'/api/orders/8/retry')
+ assert.equal(calls[0].method,'post')
+ const failure={isAxiosError:true,response:{status:503,data:{detail:{order_id:8,message:'Reservation pending; retry this order'}}}}
+ assert.equal(errors.getErrorOrderId(failure),8)
+ assert.match(errors.getApiErrorMessage(failure),/reserva.*pendiente/)
+ assert.equal(errors.getErrorOrderId(new Error('offline')),null)
+})
+test('order transitions do not offer unsupported operations', async () => {
+ const {orderTransitions}=await load('utils/orders')
+ assert.deepEqual(orderTransitions.RESERVING,['CANCELLED'])
+ assert.deepEqual(orderTransitions.PENDING,['PAID','CANCELLED'])
+ assert.deepEqual(orderTransitions.PAID,['SHIPPED'])
+ assert.deepEqual(orderTransitions.SHIPPED,[])
+ assert.deepEqual(orderTransitions.CANCELLED,[])
 })

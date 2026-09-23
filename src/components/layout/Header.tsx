@@ -3,34 +3,27 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Search,
   ShoppingCart,
-  UserRound,
   Package,
   Menu,
   X,
   ArrowRight,
-  LogOut,
-  Cpu,
+  Settings,
 } from 'lucide-react'
 import icon2 from '../../assets/icon2.png'
 
-import { useAuth, useCart, useProducts } from '../../hooks'
-import { categories, categoryHref } from '../../data/categories'
+import { useCart, useProducts } from '../../hooks'
 import { matchesSearch } from '../../utils/catalog'
 import { formatPrice } from '../../utils/formatPrice'
 import { ProductImage } from '../product/ProductImage'
 export function Wordmark() {
   return (
-<Link
-  className="wordmark"
-  to="/"
-  aria-label="HardTech Hub, inicio"
->
-  <img
-    src={icon2}
-    alt="HardTech Hub"
-    className="h-16 w-auto object-contain"
-  />
-</Link>
+    <Link className="wordmark" to="/" aria-label="HardTech Hub, inicio">
+      <img
+        src={icon2}
+        alt="HardTech Hub"
+        className="h-16 w-auto object-contain"
+      />
+    </Link>
   )
 }
 function SearchBox() {
@@ -105,91 +98,18 @@ function SearchBox() {
   )
 }
 export function Header() {
-  const { user, logout } = useAuth()
-  const { totalItems } = useCart()
-  const [menu, setMenu] = useState(false)
-  const location = useLocation()
-  return (
-    <header className="site-header">
-      <div className="container header-inner">
-        <button
-          className="icon-button mobile-menu-toggle"
-          aria-label={menu ? 'Cerrar menú' : 'Abrir menú'}
-          aria-expanded={menu}
-          aria-controls="mobile-menu"
-          onClick={() => setMenu(!menu)}
-        >
-          {menu ? <X /> : <Menu />}
-        </button>
-        <Wordmark />
-        <SearchBox key={location.pathname + location.search} />
-        <div className="header-actions">
-          <Link
-            className="header-action account-action"
-            to={user ? '/perfil' : '/login'}
-          >
-            <UserRound size={23} />
-            <span>
-              <small>
-                {user ? 'Hola, ' + user.email.split('@')[0] : 'Bienvenido'}
-              </small>
-              {user ? 'Mi cuenta' : 'Iniciar sesión'}
-            </span>
-          </Link>
-          <Link className="header-action orders-action" to="/pedidos">
-            <Package size={23} />
-            <span>
-              <small>Consulta tus</small>Pedidos
-            </span>
-          </Link>
-          <Link
-            className="cart-link"
-            to="/carrito"
-            aria-label={`Carrito, ${totalItems} productos`}
-          >
-            <ShoppingCart size={25} />
-            <span className="cart-count">{totalItems}</span>
-          </Link>
-        </div>
-      </div>
-      {menu && (
-        <nav
-          id="mobile-menu"
-          className="mobile-menu"
-          aria-label="Menú móvil"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') setMenu(false)
-          }}
-        >
-          <Link to="/productos" onClick={() => setMenu(false)}>
-            Todos los productos <ArrowRight size={16} />
-          </Link>
-          {categories.map((item) => (
-            <Link
-              key={item.value}
-              to={categoryHref(item.value)}
-              onClick={() => setMenu(false)}
-            >
-              <item.icon size={18} />
-              {item.label}
-            </Link>
-          ))}
-          <Link to={user ? '/perfil' : '/login'} onClick={() => setMenu(false)}>
-            <UserRound size={18} />
-            {user ? 'Mi cuenta' : 'Iniciar sesión'}
-          </Link>
-          <Link to="/pedidos" onClick={() => setMenu(false)}>
-            <Package size={18} />
-            Mis pedidos
-          </Link>
-          {user && (
-            <button onClick={logout}>
-              <LogOut size={18} />
-              Cerrar sesión
-            </button>
-          )}
-        </nav>
-      )}
-    </header>
-  )
+ const { totalItems } = useCart()
+ const [menu, setMenu] = useState(false)
+ const location = useLocation()
+ return <header className="site-header"><div className="container header-inner">
+ <button className="icon-button mobile-menu-toggle" aria-label="Abrir navegación" aria-expanded={menu} onClick={() => setMenu(!menu)}>{menu ? <X /> : <Menu />}</button>
+ <Wordmark /><SearchBox key={location.pathname + location.search} />
+ <div className="header-actions">
+ <Link className="header-action" to="/admin"><Settings size={23}/><span>Gestionar</span></Link>
+ <Link className="header-action" to="/analitica"><span>Analítica</span></Link>
+ <Link className="header-action orders-action" to="/pedidos"><Package size={23}/><span>Pedidos</span></Link>
+ <Link className="cart-link" to="/carrito" aria-label={`Carrito, ${totalItems} productos`}><ShoppingCart size={25}/><span className="cart-count">{totalItems}</span></Link>
+ </div></div>{menu && <nav className="mobile-menu" aria-label="Navegación móvil">
+ {[['/productos','Productos'],['/compatibilidad','Compatibilidad'],['/pedidos','Pedidos'],['/analitica','Analítica'],['/admin','Gestionar']].map(([path,label]) => <Link key={path} to={path} onClick={()=>setMenu(false)}>{label}</Link>)}
+ </nav>}</header>
 }

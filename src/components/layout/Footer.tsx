@@ -17,25 +17,23 @@ export function Footer() {
         <div>
           <h3>Comprar</h3>
           <Link to="/productos">Todos los productos</Link>
-          <Link to="/productos?category=CPU">Procesadores</Link>
-          <Link to="/productos?category=GPU">Tarjetas gráficas</Link>
-          <Link to="/productos?category=RAM">Memorias RAM</Link>
         </div>
         <div>
-          <h3>Tu cuenta</h3>
-          <Link to="/perfil">Mi perfil</Link>
-          <Link to="/pedidos">Mis pedidos</Link>
+          <h3>La tienda</h3>
+          <Link to="/analitica">Analítica</Link>
+          <Link to="/pedidos">Pedidos</Link>
           <Link to="/carrito">Mi carrito</Link>
-          <Link to="/registro">Crear una cuenta</Link>
+          <Link to="/admin">Gestionar catálogo</Link>
         </div>
         <div>
           <h3>Antes de comprar</h3>
+          <Link to="/compatibilidad">Comprobar compatibilidad</Link>
           <Link to="/ayuda">
             Centro de ayuda <ArrowUpRight size={14} />
           </Link>
           <Link to="/ayuda#pedidos">Cómo hacer un pedido</Link>
           <Link to="/ayuda#envios">Importes y envío</Link>
-          <Link to="/ayuda#sesion">Tu sesión y carrito</Link>
+          <Link to="/ayuda#carrito">Tu carrito</Link>
         </div>
       </div>
       <div className="container footer-bottom">

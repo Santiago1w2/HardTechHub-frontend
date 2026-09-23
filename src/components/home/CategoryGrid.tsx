@@ -1,25 +1,12 @@
+import { useProducts } from '../../hooks/useProducts'
 import { ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { categories, categoryHref } from '../../data/categories'
+import { categoryInfo, categoryHref } from '../../data/categories'
 import { AssetImage } from '../common/AssetImage'
 export function CategoryGrid({ setup = false }: { setup?: boolean }) {
-  const selected = setup
-    ? categories.filter((item) =>
-        ['CPU', 'Motherboard', 'RAM', 'GPU', 'Storage', 'PSU'].includes(
-          item.value,
-        ),
-      )
-    : categories.filter((item) =>
-        [
-          'PC Gaming',
-          'CPU',
-          'GPU',
-          'Laptop',
-          'Monitor',
-          'Storage',
-          'Peripherals',
-        ].includes(item.value),
-      )
+  const { products } = useProducts()
+  const categories = [...new Set(products.map(p => p.category))].map(value => ({value, label: value, icon: ArrowUpRight, asset: '', ...categoryInfo(value)}))
+  const selected = categories
   return (
     <div className={`category-grid ${setup ? 'setup-grid': ''}`}>
       {selected.map((item, index) => (

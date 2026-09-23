@@ -1,7 +1,10 @@
+import { useProducts } from '../../hooks/useProducts'
 import { ArrowUpRight, Grid2X2, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { categories, categoryHref } from '../../data/categories'
+import { categoryInfo, categoryHref } from '../../data/categories'
 export function CategoryNav() {
+  const { products } = useProducts()
+  const categories = [...new Set(products.map(p => p.category))].map(value => ({value, label: categoryInfo(value)?.label ?? value}))
   return (
     <nav className="category-nav" aria-label="Categorías principales">
       <div className="container category-nav-inner">
@@ -16,6 +19,7 @@ export function CategoryNav() {
               {item.value === 'RAM' ? 'RAM' : item.label}
             </Link>
           ))}
+        <Link to="/compatibilidad">Compatibilidad</Link>
         <Link className="offers-link" to="/productos?sort=price-asc">
           <Zap size={14} />
           Explora precios

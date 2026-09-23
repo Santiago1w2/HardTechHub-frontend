@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Cpu, Laptop, Microchip } from 'lucide-react'
+import { ArrowRight, ArrowUpRight} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AssetImage } from '../common/AssetImage'
 export function Hero() {
@@ -33,15 +33,15 @@ export function Hero() {
         />
       </div>
       <div className="hero-side">
-        <Link to="/productos?category=GPU" className="mini-banner gpu-banner">
+        <Link to="/productos" className="mini-banner gpu-banner">
           <span className="eyebrow">MÁS ALLÁ DE LOS PÍXELES</span>
           <h2>
-            GPU de nueva
+            Explora el
             <br />
-            generación<span>.</span>
+            catálogo<span>.</span>
           </h2>
           <span className="text-link">
-            Explorar gráficas
+            Ver componentes
             <ArrowUpRight size={16} />
           </span>
           <AssetImage
@@ -50,17 +50,17 @@ export function Hero() {
           />
         </Link>
         <Link
-          to="/productos?category=Laptop"
+          to="/compatibilidad"
           className="mini-banner laptop-banner"
         >
           <span className="eyebrow">TU POTENCIA, CONTIGO</span>
           <h2>
-            Laptops para
+            Componentes para
             <br />
-            todo tu potencial<span>.</span>
+            tu próximo equipo<span>.</span>
           </h2>
           <span className="text-link">
-            Ver laptops
+            Comprobar compatibilidad
             <ArrowUpRight size={16} />
           </span>
           <AssetImage

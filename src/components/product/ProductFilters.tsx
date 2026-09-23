@@ -1,4 +1,4 @@
-import { categories } from '../../data/categories'
+import { categoryInfo } from '../../data/categories'
 import type { Product } from '../../types/type'
 export function ProductFilters({
   products,
@@ -12,12 +12,8 @@ export function ProductFilters({
   reset: () => void
 }) {
   const brands = [...new Set(products.map((product) => product.brand))].sort()
-  const choices = [
-    ...categories.map((item) => ({ value: item.value, label: item.label })),
-    ...[...new Set(products.map((product) => product.category))]
-      .filter((value) => !categories.some((item) => item.value === value))
-      .map((value) => ({ value, label: value })),
-  ]
+  const choices = [...new Set(products.map(product => product.category))]
+    .map(value => ({ value, label: categoryInfo(value)?.label ?? value }))
   return (
     <div className="filter-content">
       <div className="filter-heading">
@@ -99,8 +95,7 @@ export function ProductFilters({
         </div>
       </fieldset>
       <div className="filter-note">
-        Se muestran productos activos del catálogo. La disponibilidad de
-        unidades no está informada.
+        Se muestran productos activos del catálogo. Consulta la disponibilidad en el detalle de cada producto.
       </div>
     </div>
   )

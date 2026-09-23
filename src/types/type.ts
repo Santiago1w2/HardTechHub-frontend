@@ -1,107 +1,83 @@
-export interface AuthRequest {
-    email: string
-    password: string
-}
-
-export interface RegisterResponse {
-    message: string
-    user_id: string
-}
-
-export interface LoginResponse {
-    access_token: string
-    token_type: string
-}
-
-export interface UserProfile {
-    user_id: string
-    email: string
-    roles: string[]
-    preferences: Record<string, unknown>
-    created_at: string | null
-}
-
 export interface Product {
-    id: number
-    sku: string
-    name: string
-    description: string | null
-    price: string
-    specs: Record<string, unknown>
-    image_url: string | null
-    category: string
-    brand: string
+  id: number
+  sku: string
+  name: string
+  description: string | null
+  price: string
+  specs: Record<string, unknown>
+  image_url: string | null
+  category: string
+  brand: string
 }
 
 export interface ProductDetail extends Product {
-    is_active: boolean
-    created_at: string
+  is_active: boolean
+  created_at: string
 }
 
-export type OrderStatus = | 'PENDING'| 'PAID' | 'SHIPPED' | 'CANCELLED'
+export type OrderStatus = 'RESERVING' | 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELLED'
 
 export type Money = string | number
 
 export interface OrderItemRequest {
-    product_id: number
-    quantity: number
+  product_id: number
+  quantity: number
 }
 
 export interface CreateOrderRequest {
-    user_id: string
-    items: OrderItemRequest[]
+  items: OrderItemRequest[]
 }
 
 export interface CreateOrderResponse {
-    order_id: number
-    status: OrderStatus
-    total_amount: string
+  order_id: number
+  status: OrderStatus
+  total_amount: string
 }
 
 export interface Order {
-    id: number
-    user_id: string
-    status: OrderStatus
-    subtotal: Money
-    tax: Money
-    shipping_cost: Money
-    total_amount: Money
-    created_at: string
-    updated_at: string
+  id: number
+  status: OrderStatus
+  subtotal: Money
+  tax: Money
+  shipping_cost: Money
+  total_amount: Money
+  created_at: string
+  updated_at: string
 }
 
 export interface OrderItem {
-    id: number
-    order_id: number
-    product_id: number
-    product_sku: string
-    product_name: string
-    quantity: number
-    unit_price: Money
-    subtotal: Money
+  id: number
+  order_id: number
+  product_id: number
+  product_sku: string
+  product_name: string
+  quantity: number
+  unit_price: Money
+  subtotal: Money
 }
 
 export interface OrderDetail {
-    order: Order
-    items: OrderItem[]
+  order: Order
+  items: OrderItem[]
 }
 
 export interface UpdateOrderStatusResponse {
-    order_id: number
-    status: OrderStatus
+  order_id: number
+  status: OrderStatus
 }
 
 export interface EventCountResponse {
-    total_events: number
-    by_type: Record<string, number>
-    prefix: string
+  total_events: number
+  by_type: Record<string, number>
 }
 
 export interface TopProductsResponse {
-    top_products: Array<{
-        product_id: string
-        views: number
-    }>
+  top_products: Array<{
+    product_id: number
+    product_name: string
+    units: number | string
+    revenue: string
+  }>
 }
 export interface CreateProductRequest {
   category_id: number
@@ -110,7 +86,7 @@ export interface CreateProductRequest {
   name: string
   price: number
   description?: string
-  specs: Record<string, unknown>
+  specs?: Record<string, unknown>
   image_url?: string
 }
 export interface CreateProductResponse {
@@ -119,13 +95,70 @@ export interface CreateProductResponse {
   name: string
   price: string
 }
-// PUT replaces all these fields; do not send a partial object.
+
 export interface UpdateProductRequest {
-  name: string
-  description: string
-  price: number
-  specs: Record<string, unknown>
-  image_url: string
-  is_active: boolean
+  name?: string
+  description?: string
+  price?: number
+  specs?: Record<string, unknown>
+  image_url?: string
+  is_active?: boolean
 }
-export interface CartItem { product: Product; quantity: number }
+export interface CartItem {
+  product: Product
+  quantity: number
+}
+
+export type ComponentType = 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'psu'
+
+export interface ComponenteRequestCompatibility {
+  type: ComponentType
+  product_id: number
+}
+
+export interface CompatibilityResponse {
+  compatible: boolean
+  messages: Array<string>
+}
+
+export interface CompatibilityRequest {
+  components: Array<ComponenteRequestCompatibility>
+}
+
+export interface CatalogOption {
+  id: number
+  name: string
+}
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  page: number
+  limit: number
+  total: number
+}
+
+export type ProductStatusFilter = 'all' | 'active' | 'inactive'
+
+export interface AdminProductFilters {
+  page: number
+  limit: number
+  status?: ProductStatusFilter
+  q?: string
+}
+
+export interface AdminOrderFilters {
+  page: number
+  limit: number
+  status?: OrderStatus
+  order_id?: number
+  date_from?: string
+  date_to?: string
+}
+
+export interface InventoryItem { product_id: number; stock: number; reserved_stock: number; available_stock: number; reorder_point: number; updated_at: string }
+export interface AnalyticsSummary { orders: number; sales: number; revenue: string; units_sold?: number | string; products_sold?: number }
+export interface AnalyticsCategory { category: string; units: number | string; revenue: string }
+export interface AnalyticsTrend { day: string; sales: number; revenue: string }
+export interface AnalyticsMovement { movement_type: string; movements: number; units: number | string }
+export interface TopViewsResponse { top_products: { product_id: number | string; views: number }[] }
+export interface AnalyticsRefresh { records: number; key: string; refreshed_at: string }

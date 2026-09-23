@@ -1,6 +1,8 @@
-import { getProducts } from '../services/catalogService'
-import { useQuery } from './useQuery'
+import { useContext } from 'react'
+import { CatalogContext } from '../contexts/CatalogContext'
+
 export function useProducts() {
-  const { data, ...state } = useQuery('products', getProducts)
-  return { products: data ?? [], ...state }
+  const context = useContext(CatalogContext)
+  if (!context) throw new Error('useProducts requiere CatalogProvider')
+  return context
 }

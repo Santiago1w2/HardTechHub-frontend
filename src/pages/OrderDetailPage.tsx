@@ -1,6 +1,8 @@
+import { useState } from 'react'
+import { OrderStatusEditor } from '../components/admin/OrderStatusEditor'
 import { useLocation, useParams } from 'react-router-dom'
 import { CheckCircle2, Package } from 'lucide-react'
-import { useAuth, useOrder } from '../hooks'
+import { useOrder } from '../hooks'
 import { formatPrice } from '../utils/formatPrice'
 import { formatDate } from '../utils/catalog'
 import {
@@ -12,27 +14,36 @@ import { OrderStatusBadge } from '../components/common/OrderStatusBadge'
 import { Breadcrumb } from '../components/common/Breadcrumb'
 export function OrderDetailPage() {
   const { id } = useParams()
+  return <OrderDetail key={id} id={id} />
+}
+
+function OrderDetail({ id }: { id: string | undefined }) {
   const { order: detail, loading, error, refetch } = useOrder(Number(id))
-  const { user } = useAuth()
   const location = useLocation()
+  const [updated, setUpdated] = useState(false)
+  const parent = location.pathname.startsWith('/admin/')
+    ? { label: 'Pedidos de la tienda', href: '/admin/pedidos' }
+    : { label: 'Pedidos', href: '/pedidos' }
   const registered = (location.state as { registered?: boolean } | null)
     ?.registered
   return (
     <div className="container page">
-      <Breadcrumb
-        current={`Pedido #${id}`}
-        parent={{ label: 'Mis pedidos', href: '/pedidos' }}
-      />
+      <Breadcrumb current={`Pedido #${id}`} parent={parent} />
+      {updated && (
+        <p className="success-banner" role="status">
+          Estado del pedido actualizado.
+        </p>
+      )}
       {loading ? (
         <PageSkeleton />
       ) : error ? (
         <ErrorState message={error} retry={refetch} />
-      ) : !detail || detail.order.user_id !== user?.user_id ? (
+      ) : !detail ? (
         <EmptyState
           title="Pedido no disponible"
-          message="Consulta los pedidos de tu cuenta."
+          message="Consulta los pedidos de la tienda."
           href="/pedidos"
-          action="Mis pedidos"
+          action="Pedidos"
         />
       ) : (
         <>
@@ -55,6 +66,14 @@ export function OrderDetailPage() {
             </div>
             <OrderStatusBadge status={detail.order.status} />
           </div>
+            <OrderStatusEditor
+              key={`${detail.order.id}:${detail.order.status}`}
+              order={detail.order}
+              onUpdated={() => {
+                setUpdated(true)
+                refetch()
+              }}
+            />
           <div className="purchase-layout">
             <section className="historical-items">
               <h2>Productos del pedido</h2>

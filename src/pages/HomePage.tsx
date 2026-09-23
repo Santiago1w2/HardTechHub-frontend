@@ -30,8 +30,8 @@ export function HomePage() {
           },
           {
             icon: ShieldCheck,
-            title: 'Tu cuenta',
-            text: 'Un espacio para tus compras',
+            title: 'Compatibilidad',
+            text: 'Comprueba tus componentes',
           },
           {
             icon: RotateCcw,
@@ -94,7 +94,7 @@ export function HomePage() {
             </h2>
             <p>Empieza por una categoría. Dale forma a tu próxima PC.</p>
           </div>
-          <span className="section-number">01 — 06</span>
+
         </div>
         <CategoryGrid setup />
       </section>

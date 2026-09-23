@@ -1,14 +1,16 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { createOrder } from '../services/ordersService'
 import type { OrderItemRequest } from '../types/type'
-import { useAuth } from './useAuth'
 import { useMutation } from './useMutation'
 export function useCreateOrder() {
-  const { user } = useAuth()
+  const attempt = useRef<{ signature: string; key: string } | null>(null)
   const submit = useCallback((items: OrderItemRequest[]) => {
-    if (!user) throw new Error('Inicia sesión para crear un pedido')
-    return createOrder({ user_id: user.user_id, items })
-  }, [user])
+    const signature = JSON.stringify(items)
+    if (attempt.current?.signature !== signature) {
+      attempt.current = { signature, key: Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('') }
+    }
+    return createOrder({ items }, attempt.current.key)
+  }, [])
   const { execute, ...state } = useMutation(submit)
   return { submitOrder: execute, ...state }
 }

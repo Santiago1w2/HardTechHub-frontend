@@ -7,10 +7,11 @@ import { ProductImage } from '../components/product/ProductImage'
 import { EmptyState, LoadingSpinner } from '../components/common/States'
 import { Breadcrumb } from '../components/common/Breadcrumb'
 import { formatPrice } from '../utils/formatPrice'
-import { getApiErrorMessage } from '../api/errors'
+import { getApiErrorMessage, getErrorOrderId } from '../api/errors'
 export function CheckoutPage() {
   const { items, toOrderItems, clearCart } = useCart()
   const { submitOrder, loading, error } = useCreateOrder()
+  const [pendingId, setPendingId] = useState<number | null>(null)
   const [localError, setLocalError] = useState('')
   const navigate = useNavigate()
   async function confirm() {
@@ -25,6 +26,7 @@ export function CheckoutPage() {
       })
     } catch (failure) {
       setLocalError(getApiErrorMessage(failure))
+      setPendingId(getErrorOrderId(failure))
     }
   }
   return (
@@ -85,6 +87,7 @@ export function CheckoutPage() {
             </Link>
           </div>
           <CartSummary checkout>
+            {pendingId && <Link className="text-link" to={`/pedidos/${pendingId}`}>Consultar pedido #{pendingId} y resolver su reserva</Link>}
             {(localError || error) && (
               <p className="form-error" role="alert">
                 {localError || error}
@@ -93,7 +96,7 @@ export function CheckoutPage() {
             <button
               className="button full-width"
               onClick={confirm}
-              disabled={loading}
+              disabled={loading || pendingId !== null}
             >
               {loading ? <LoadingSpinner /> : <ArrowRight size={18} />}
               {loading ? 'Registrando pedido…' : 'Confirmar pedido'}

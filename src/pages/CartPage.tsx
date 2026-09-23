@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
-import { useAuth, useCart } from '../hooks'
+import { useCart } from '../hooks'
 import { CartItem } from '../components/cart/CartItem'
 import { CartSummary } from '../components/cart/CartSummary'
 import { EmptyState } from '../components/common/States'
 import { Breadcrumb } from '../components/common/Breadcrumb'
 export function CartPage() {
   const { items, totalItems } = useCart()
-  const { isAuthenticated } = useAuth()
   return (
     <div className="container page">
       <Breadcrumb current="Carrito" />
@@ -42,23 +41,12 @@ export function CartPage() {
             </Link>
           </div>
           <CartSummary>
-            {isAuthenticated ? (
+
               <Link className="button full-width" to="/checkout">
                 Continuar compra
                 <ArrowRight size={17} />
               </Link>
-            ) : (
-              <>
-                <p className="notice">
-                  Inicia sesión antes de continuar. Al iniciar sesión se
-                  reinicia el carrito actual.
-                </p>
-                <Link to="/login" className="button full-width">
-                  Iniciar sesión
-                  <ArrowRight size={17} />
-                </Link>
-              </>
-            )}
+
           </CartSummary>
         </div>
       )}
